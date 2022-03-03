@@ -14,6 +14,8 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+
+    implementation("org.openpnp:opencv:4.5.1-2")
 }
 
 tasks.test {
