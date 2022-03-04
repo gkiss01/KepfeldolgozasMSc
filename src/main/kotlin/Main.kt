@@ -6,29 +6,40 @@ import org.opencv.core.Size
 import org.opencv.highgui.HighGui
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
+import java.awt.Toolkit
+
+const val WINDOW_NAME = "Hand detection"
 
 fun main(args: Array<String>) {
     OpenCV.loadLocally()
 
-    HighGui.namedWindow("Hand")
-    HighGui.resizeWindow("Hand", 200, 200)
-    HighGui.moveWindow("Hand", 100, 100)
+    val dimension = Toolkit.getDefaultToolkit().screenSize
 
-    var img: Mat
-    for (i in 0..2)
-        for (j in 0..49) {
-            img = Imgcodecs.imread("./TestPictures/Dataset2/train/$i/$j.png", Imgcodecs.IMREAD_COLOR)
-            val handImg = keepHand(img)
+    HighGui.namedWindow(WINDOW_NAME, HighGui.WINDOW_NORMAL)
+    HighGui.resizeWindow(WINDOW_NAME, dimension.width / 2, dimension.height / 2)
 
-            HighGui.imshow("Hand", handImg)
-            HighGui.waitKey()
-        }
+    for (i in 1..28) {
+        val img = Imgcodecs.imread("./HandPictures/$i.jpg", Imgcodecs.IMREAD_COLOR)
+
+        resizeImage(img, dimension.width / 2, dimension.height / 2)
+        keepHand(img)
+
+        HighGui.imshow(WINDOW_NAME, img)
+        HighGui.waitKey()
+    }
 
     HighGui.waitKey()
     HighGui.destroyAllWindows()
 }
 
-fun keepHand(src: Mat): Mat {
+fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
+    val scale = (maxWidth / src.width().toDouble())
+        .coerceAtMost(maxHeight / src.height().toDouble())
+        .coerceAtMost(1.0)
+    Imgproc.resize(src, src, Size(0.0, 0.0), scale, scale)
+}
+
+fun keepHand(src: Mat) {
     val lowerColor = doubleArrayOf(0.0, 58.0, 50.0)
     val upperColor = doubleArrayOf(30.0, 255.0, 255.0)
 
@@ -40,9 +51,7 @@ fun keepHand(src: Mat): Mat {
     Imgproc.cvtColor(blur, hsv, Imgproc.COLOR_BGR2HSV)
     Core.inRange(hsv, Scalar(lowerColor), Scalar(upperColor), mask)
 
-    Imgproc.medianBlur(mask, blur, 5)
+    Imgproc.medianBlur(mask, src, 5)
     val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(8.0, 8.0))
-    Imgproc.dilate(blur, blur, kernel)
-
-    return blur
+    Imgproc.dilate(src, src, kernel)
 }
