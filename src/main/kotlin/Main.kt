@@ -8,28 +8,43 @@ import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.awt.Toolkit
 
-const val WINDOW_NAME = "Hand detection"
+const val WINDOW_NAME_ORIGINAL = "Hand detection"
+const val WINDOW_NAME_PROCESSED = "Hand detection (processed)"
 
 fun main(args: Array<String>) {
     OpenCV.loadLocally()
 
     val dimension = Toolkit.getDefaultToolkit().screenSize
 
-    HighGui.namedWindow(WINDOW_NAME, HighGui.WINDOW_NORMAL)
-    HighGui.resizeWindow(WINDOW_NAME, dimension.width / 2, dimension.height / 2)
+    HighGui.namedWindow(WINDOW_NAME_ORIGINAL, HighGui.WINDOW_NORMAL)
+    HighGui.resizeWindow(WINDOW_NAME_ORIGINAL, dimension.width / 2, dimension.height / 2)
+    HighGui.moveWindow(WINDOW_NAME_ORIGINAL, 0, 0)
+
+    HighGui.namedWindow(WINDOW_NAME_PROCESSED, HighGui.WINDOW_NORMAL)
+    HighGui.resizeWindow(WINDOW_NAME_PROCESSED, dimension.width / 2, dimension.height / 2)
+    HighGui.moveWindow(WINDOW_NAME_PROCESSED, 0, dimension.height / 2)
 
     for (i in 1..28) {
         val img = Imgcodecs.imread("./HandPictures/$i.jpg", Imgcodecs.IMREAD_COLOR)
 
         resizeImage(img, dimension.width / 2, dimension.height / 2)
-        keepHand(img)
+        HighGui.imshow(WINDOW_NAME_ORIGINAL, img)
 
-        HighGui.imshow(WINDOW_NAME, img)
+        val processedImg = copyImage(img)
+        keepHand(processedImg)
+        HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
+
         HighGui.waitKey()
     }
 
     HighGui.waitKey()
     HighGui.destroyAllWindows()
+}
+
+fun copyImage(src: Mat): Mat {
+    val copyImg = Mat()
+    src.copyTo(copyImg)
+    return copyImg
 }
 
 fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
