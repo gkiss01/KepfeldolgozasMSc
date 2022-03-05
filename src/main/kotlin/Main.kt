@@ -8,6 +8,7 @@ import kotlin.math.floor
 
 const val WINDOW_NAME_ORIGINAL = "Hand detection"
 const val WINDOW_NAME_PROCESSED = "Hand detection (processed)"
+const val WINDOW_NAME_SPLIT = "Hand detection (split)"
 
 fun main(args: Array<String>) {
     OpenCV.loadLocally()
@@ -22,6 +23,10 @@ fun main(args: Array<String>) {
     HighGui.resizeWindow(WINDOW_NAME_PROCESSED, dimension.width / 2, dimension.height / 2)
     HighGui.moveWindow(WINDOW_NAME_PROCESSED, 0, dimension.height / 2)
 
+    HighGui.namedWindow(WINDOW_NAME_SPLIT, HighGui.WINDOW_NORMAL)
+    HighGui.resizeWindow(WINDOW_NAME_SPLIT, dimension.width / 2, dimension.height / 2)
+    HighGui.moveWindow(WINDOW_NAME_SPLIT, dimension.width / 2, dimension.height / 2)
+
     for (i in 1..28) {
         val img = Imgcodecs.imread("./HandPictures/$i.jpg", Imgcodecs.IMREAD_COLOR)
 
@@ -29,12 +34,26 @@ fun main(args: Array<String>) {
         HighGui.imshow(WINDOW_NAME_ORIGINAL, img)
 
         val processedImg = img.clone()
-        //keepHand(processedImg)
-        //HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
-
+        keepHand(processedImg)
+        HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
         //HighGui.waitKey()
 
-        generatePartMasks(processedImg, 3)
+        val splitImg = processedImg.clone()
+        val totalPixels = Core.countNonZero(splitImg)
+        val masks = generatePartMasks(splitImg, 3)
+
+        for (j in 0 until 3) {
+            val partImg = Mat().apply { splitImg.copyTo(this, masks[j]) }
+            val partPixels = Core.countNonZero(partImg)
+
+            val partImgCol = Mat().apply { Imgproc.cvtColor(partImg, this, Imgproc.COLOR_GRAY2BGR) }
+            partImgCol.setTo(Scalar(255.0, 0.0, 0.0), partImg)
+
+            println("Part $j, pixels: $partPixels, total: $totalPixels")
+
+            HighGui.imshow(WINDOW_NAME_SPLIT, partImgCol)
+            HighGui.waitKey()
+        }
     }
 
     HighGui.waitKey()
@@ -73,14 +92,6 @@ fun generatePartMasks(src: Mat, parts: Int): List<Mat> {
         val mask = Mat.zeros(src.size(), CvType.CV_8UC1)
         Imgproc.rectangle(mask, rects[i], Scalar(255.0, 255.0, 255.0), -1)
         masks.add(mask)
-
-        //Imgproc.drawContours(src, listOf(rects[i].toMatOfPoints()), -1, Scalar(0.0, 0.0, 0.0), 1)
-
-        //Imgproc.rectangle(src, rects[i], Scalar(0.0, 0.0, 0.0), -1)
-        //Imgproc.fillPoly(src, listOf(rect.toMatOfPoints()), Scalar(0.0, 0.0, 0.0))
-
-        HighGui.imshow(WINDOW_NAME_PROCESSED, mask)
-        HighGui.waitKey()
     }
 
     return masks
