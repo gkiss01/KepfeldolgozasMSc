@@ -10,6 +10,14 @@ import kotlin.math.floor
 const val WINDOW_NAME_ORIGINAL = "Hand detection"
 const val WINDOW_NAME_PROCESSED = "Hand detection (processed)"
 const val WINDOW_NAME_SPLIT = "Hand detection (split)"
+const val WINDOW_NAME_ARROW = "Hand detection (arrow)"
+
+enum class Directions {
+    NORTH,
+    EAST,
+    SOUTH,
+    WEST
+}
 
 data class PartData(
     val partNumber: Int,
@@ -29,7 +37,7 @@ fun main(args: Array<String>) {
 
     val dimension = Toolkit.getDefaultToolkit().screenSize
     initWindows(dimension)
-    
+
     for (i in 1..28) {
         val img = Imgcodecs.imread("./HandPictures/$i.jpg", Imgcodecs.IMREAD_COLOR)
 
@@ -42,7 +50,11 @@ fun main(args: Array<String>) {
         val splitImgData = splitImage(processedImg)
         highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
         HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
-        println(splitImgData.partsData)
+
+        val arrowImg = createArrowImage(Directions.SOUTH)
+        resizeImage(arrowImg, dimension.width / 2, dimension.height / 2)
+        HighGui.imshow(WINDOW_NAME_ARROW, arrowImg)
+
         HighGui.waitKey()
     }
 
@@ -62,6 +74,10 @@ fun initWindows(screenDimension: Dimension) {
     HighGui.namedWindow(WINDOW_NAME_SPLIT, HighGui.WINDOW_NORMAL)
     HighGui.resizeWindow(WINDOW_NAME_SPLIT, screenDimension.width / 2, screenDimension.height / 2)
     HighGui.moveWindow(WINDOW_NAME_SPLIT, screenDimension.width / 2, screenDimension.height / 2)
+
+    HighGui.namedWindow(WINDOW_NAME_ARROW, HighGui.WINDOW_NORMAL)
+    HighGui.resizeWindow(WINDOW_NAME_ARROW, screenDimension.width / 2, screenDimension.height / 2)
+    HighGui.moveWindow(WINDOW_NAME_ARROW, screenDimension.width / 2, 0)
 }
 
 fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
@@ -174,6 +190,32 @@ fun splitInterval(start: Int, end: Int, parts: Int): List<Pair<Int, Int>> {
     }
 
     return intervals
+}
+
+fun createArrowImage(
+    direction: Directions,
+    arrowColor: Scalar = Scalar(64.0, 64.0, 64.0),
+    backgroundColor: Scalar = Scalar(255.0, 255.0, 255.0)
+): Mat {
+    val img = Mat(Size(600.0, 400.0), CvType.CV_8UC3, backgroundColor)
+
+    val start = when (direction) {
+        Directions.EAST -> Point(100.0, 200.0)
+        Directions.NORTH -> Point(300.0, 300.0)
+        Directions.SOUTH -> Point(300.0, 100.0)
+        Directions.WEST -> Point(500.0, 200.0)
+    }
+
+    val end = when (direction) {
+        Directions.EAST -> Point(500.0, 200.0)
+        Directions.NORTH -> Point(300.0, 100.0)
+        Directions.SOUTH -> Point(300.0, 300.0)
+        Directions.WEST -> Point(100.0, 200.0)
+    }
+
+    Imgproc.arrowedLine(img, start, end, arrowColor, 10)
+
+    return img
 }
 
 fun Rect.toMatOfPoints(): MatOfPoint {
