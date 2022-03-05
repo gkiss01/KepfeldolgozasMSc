@@ -33,8 +33,7 @@ fun main(args: Array<String>) {
         resizeImage(img, dimension.width / 2, dimension.height / 2)
         HighGui.imshow(WINDOW_NAME_ORIGINAL, img)
 
-        val processedImg = img.clone()
-        keepHand(processedImg)
+        val processedImg = keepHand(img)
         HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
 
         val splitImg = splitImage(processedImg)
@@ -85,21 +84,24 @@ fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
     Imgproc.resize(src, src, Size(0.0, 0.0), scale, scale)
 }
 
-fun keepHand(src: Mat) {
+fun keepHand(src: Mat): Mat {
     val lowerColor = doubleArrayOf(0.0, 58.0, 50.0)
     val upperColor = doubleArrayOf(30.0, 255.0, 255.0)
 
     val blur = Mat()
     val hsv = Mat()
     val mask = Mat()
+    val dst = Mat()
 
     Imgproc.GaussianBlur(src, blur, Size(3.0, 3.0), 0.0)
     Imgproc.cvtColor(blur, hsv, Imgproc.COLOR_BGR2HSV)
     Core.inRange(hsv, Scalar(lowerColor), Scalar(upperColor), mask)
 
-    Imgproc.medianBlur(mask, src, 5)
+    Imgproc.medianBlur(mask, dst, 5)
     val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(8.0, 8.0))
-    Imgproc.dilate(src, src, kernel)
+    Imgproc.dilate(dst, dst, kernel)
+
+    return dst
 }
 
 fun generatePartMasks(src: Mat, parts: Int): List<Mat> {
