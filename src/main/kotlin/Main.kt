@@ -70,11 +70,16 @@ fun generatePartMasks(src: Mat, parts: Int): List<Mat> {
     val rects = generatePartRects(src, parts)
 
     for (i in 0 until parts) {
-        //Imgproc.drawContours(src, listOf(rects[i].toMatOfPoints()), -1, Scalar(0.0, 0.0, 0.0), 2)
-        Imgproc.rectangle(src, rects[i], Scalar(0.0, 0.0, 0.0), -1)
+        val mask = Mat.zeros(src.size(), CvType.CV_8UC1)
+        Imgproc.rectangle(mask, rects[i], Scalar(255.0, 255.0, 255.0), -1)
+        masks.add(mask)
+
+        //Imgproc.drawContours(src, listOf(rects[i].toMatOfPoints()), -1, Scalar(0.0, 0.0, 0.0), 1)
+
+        //Imgproc.rectangle(src, rects[i], Scalar(0.0, 0.0, 0.0), -1)
         //Imgproc.fillPoly(src, listOf(rect.toMatOfPoints()), Scalar(0.0, 0.0, 0.0))
 
-        HighGui.imshow(WINDOW_NAME_PROCESSED, src)
+        HighGui.imshow(WINDOW_NAME_PROCESSED, mask)
         HighGui.waitKey()
     }
 
@@ -87,7 +92,8 @@ fun generatePartRects(src: Mat, parts: Int): List<Rect> {
 
     for (i in 0 until parts) {
         val point1 = Point(intervals[i].first.toDouble(), 0.0)
-        val point2 = Point(intervals[i].second.toDouble() + 1, src.height().toDouble()) // délkelet irányába 1 pixelnyi eltolás
+        val point2 =
+            Point(intervals[i].second.toDouble() + 1, src.height().toDouble()) // délkelet irányába 1 pixelnyi eltolás
         rects.add(Rect(point1, point2))
     }
 
