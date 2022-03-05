@@ -3,6 +3,7 @@ import org.opencv.core.*
 import org.opencv.highgui.HighGui
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
+import java.awt.Dimension
 import java.awt.Toolkit
 import kotlin.math.floor
 
@@ -24,19 +25,8 @@ fun main(args: Array<String>) {
     OpenCV.loadLocally()
 
     val dimension = Toolkit.getDefaultToolkit().screenSize
-
-    HighGui.namedWindow(WINDOW_NAME_ORIGINAL, HighGui.WINDOW_NORMAL)
-    HighGui.resizeWindow(WINDOW_NAME_ORIGINAL, dimension.width / 2, dimension.height / 2)
-    HighGui.moveWindow(WINDOW_NAME_ORIGINAL, 0, 0)
-
-    HighGui.namedWindow(WINDOW_NAME_PROCESSED, HighGui.WINDOW_NORMAL)
-    HighGui.resizeWindow(WINDOW_NAME_PROCESSED, dimension.width / 2, dimension.height / 2)
-    HighGui.moveWindow(WINDOW_NAME_PROCESSED, 0, dimension.height / 2)
-
-    HighGui.namedWindow(WINDOW_NAME_SPLIT, HighGui.WINDOW_NORMAL)
-    HighGui.resizeWindow(WINDOW_NAME_SPLIT, dimension.width / 2, dimension.height / 2)
-    HighGui.moveWindow(WINDOW_NAME_SPLIT, dimension.width / 2, dimension.height / 2)
-
+    initWindows(dimension)
+    
     for (i in 1..28) {
         val img = Imgcodecs.imread("./HandPictures/$i.jpg", Imgcodecs.IMREAD_COLOR)
 
@@ -54,6 +44,47 @@ fun main(args: Array<String>) {
 
     HighGui.waitKey()
     HighGui.destroyAllWindows()
+}
+
+fun initWindows(screenDimension: Dimension) {
+    HighGui.namedWindow(WINDOW_NAME_ORIGINAL, HighGui.WINDOW_NORMAL)
+    HighGui.resizeWindow(WINDOW_NAME_ORIGINAL, screenDimension.width / 2, screenDimension.height / 2)
+    HighGui.moveWindow(WINDOW_NAME_ORIGINAL, 0, 0)
+
+    HighGui.namedWindow(WINDOW_NAME_PROCESSED, HighGui.WINDOW_NORMAL)
+    HighGui.resizeWindow(WINDOW_NAME_PROCESSED, screenDimension.width / 2, screenDimension.height / 2)
+    HighGui.moveWindow(WINDOW_NAME_PROCESSED, 0, screenDimension.height / 2)
+
+    HighGui.namedWindow(WINDOW_NAME_SPLIT, HighGui.WINDOW_NORMAL)
+    HighGui.resizeWindow(WINDOW_NAME_SPLIT, screenDimension.width / 2, screenDimension.height / 2)
+    HighGui.moveWindow(WINDOW_NAME_SPLIT, screenDimension.width / 2, screenDimension.height / 2)
+}
+
+fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
+    val scale = (maxWidth / src.width().toDouble())
+        .coerceAtMost(maxHeight / src.height().toDouble())
+        .coerceAtMost(1.0)
+    Imgproc.resize(src, src, Size(0.0, 0.0), scale, scale)
+}
+
+fun keepHand(src: Mat): Mat {
+    val lowerColor = doubleArrayOf(0.0, 58.0, 50.0)
+    val upperColor = doubleArrayOf(30.0, 255.0, 255.0)
+
+    val blur = Mat()
+    val hsv = Mat()
+    val mask = Mat()
+    val dst = Mat()
+
+    Imgproc.GaussianBlur(src, blur, Size(3.0, 3.0), 0.0)
+    Imgproc.cvtColor(blur, hsv, Imgproc.COLOR_BGR2HSV)
+    Core.inRange(hsv, Scalar(lowerColor), Scalar(upperColor), mask)
+
+    Imgproc.medianBlur(mask, dst, 5)
+    val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(8.0, 8.0))
+    Imgproc.dilate(dst, dst, kernel)
+
+    return dst
 }
 
 fun splitImage(
@@ -87,33 +118,6 @@ fun splitImage(
     }
 
     return SplitImageData(splitImg, partsData)
-}
-
-fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
-    val scale = (maxWidth / src.width().toDouble())
-        .coerceAtMost(maxHeight / src.height().toDouble())
-        .coerceAtMost(1.0)
-    Imgproc.resize(src, src, Size(0.0, 0.0), scale, scale)
-}
-
-fun keepHand(src: Mat): Mat {
-    val lowerColor = doubleArrayOf(0.0, 58.0, 50.0)
-    val upperColor = doubleArrayOf(30.0, 255.0, 255.0)
-
-    val blur = Mat()
-    val hsv = Mat()
-    val mask = Mat()
-    val dst = Mat()
-
-    Imgproc.GaussianBlur(src, blur, Size(3.0, 3.0), 0.0)
-    Imgproc.cvtColor(blur, hsv, Imgproc.COLOR_BGR2HSV)
-    Core.inRange(hsv, Scalar(lowerColor), Scalar(upperColor), mask)
-
-    Imgproc.medianBlur(mask, dst, 5)
-    val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(8.0, 8.0))
-    Imgproc.dilate(dst, dst, kernel)
-
-    return dst
 }
 
 fun generatePartMasks(src: Mat, parts: Int): List<Mat> {
