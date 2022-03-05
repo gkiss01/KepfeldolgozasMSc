@@ -10,6 +10,16 @@ const val WINDOW_NAME_ORIGINAL = "Hand detection"
 const val WINDOW_NAME_PROCESSED = "Hand detection (processed)"
 const val WINDOW_NAME_SPLIT = "Hand detection (split)"
 
+data class PartData(
+    val partNumber: Int,
+    val partRatio: Double
+)
+
+data class SplitImageData(
+    val splitImage: Mat,
+    val partsData: List<PartData>
+)
+
 fun main(args: Array<String>) {
     OpenCV.loadLocally()
 
@@ -36,8 +46,9 @@ fun main(args: Array<String>) {
         val processedImg = keepHand(img)
         HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
 
-        val splitImg = splitImage(processedImg)
-        HighGui.imshow(WINDOW_NAME_SPLIT, splitImg)
+        val splitImgData = splitImage(processedImg)
+        HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
+        println(splitImgData.partsData)
         HighGui.waitKey()
     }
 
@@ -55,26 +66,27 @@ fun splitImage(
         Scalar(255.0, 255.0, 0.0),
         Scalar(255.0, 255.0, 255.0)
     )
-): Mat {
+): SplitImageData {
 
-    if (partColors.size < parts) return Mat()
+    if (partColors.size < parts) return SplitImageData(Mat(), emptyList())
 
     val splitImg = src.clone()
     val masks = generatePartMasks(src, parts)
+
+    val partsData = mutableListOf<PartData>()
     val totalPixels = Core.countNonZero(src)
 
     Imgproc.cvtColor(splitImg, splitImg, Imgproc.COLOR_GRAY2BGR)
 
     for (j in 0 until parts) {
         val partImg = Mat().apply { src.copyTo(this, masks[j]) }
-        val partPixels = Core.countNonZero(partImg)
-
         splitImg.setTo(partColors[j], partImg)
 
-        //println("Part $j, pixels: $partPixels, total: $totalPixels")
+        val partPixels = Core.countNonZero(partImg)
+        partsData.add(PartData(j, partPixels / totalPixels.toDouble()))
     }
 
-    return splitImg
+    return SplitImageData(splitImg, partsData)
 }
 
 fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
