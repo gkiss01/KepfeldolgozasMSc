@@ -7,13 +7,14 @@ import org.opencv.highgui.HighGui
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.awt.Toolkit
+import kotlin.math.floor
 
 const val WINDOW_NAME_ORIGINAL = "Hand detection"
 const val WINDOW_NAME_PROCESSED = "Hand detection (processed)"
 
 fun main(args: Array<String>) {
     OpenCV.loadLocally()
-
+    
     val dimension = Toolkit.getDefaultToolkit().screenSize
 
     HighGui.namedWindow(WINDOW_NAME_ORIGINAL, HighGui.WINDOW_NORMAL)
@@ -30,7 +31,7 @@ fun main(args: Array<String>) {
         resizeImage(img, dimension.width / 2, dimension.height / 2)
         HighGui.imshow(WINDOW_NAME_ORIGINAL, img)
 
-        val processedImg = copyImage(img)
+        val processedImg = img.clone()
         keepHand(processedImg)
         HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
 
@@ -39,12 +40,6 @@ fun main(args: Array<String>) {
 
     HighGui.waitKey()
     HighGui.destroyAllWindows()
-}
-
-fun copyImage(src: Mat): Mat {
-    val copyImg = Mat()
-    src.copyTo(copyImg)
-    return copyImg
 }
 
 fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
@@ -69,4 +64,22 @@ fun keepHand(src: Mat) {
     Imgproc.medianBlur(mask, src, 5)
     val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(8.0, 8.0))
     Imgproc.dilate(src, src, kernel)
+}
+
+fun splitInterval(start: Int, end: Int, parts: Int): List<Pair<Int, Int>> {
+    val size = floor((end - start + 1) / parts.toDouble())
+    var mod = (end - start + 1) % parts.toDouble()
+
+    var nStart: Int
+    var nEnd = start - 1
+
+    val intervals = mutableListOf<Pair<Int, Int>>()
+
+    for (i in 0 until parts) {
+        nStart = nEnd + 1
+        nEnd = (nStart + size - 1 + if (mod-- > 0) 1 else 0).toInt()
+        intervals.add(Pair(nStart, nEnd))
+    }
+
+    return intervals
 }
