@@ -36,28 +36,46 @@ fun main(args: Array<String>) {
         val processedImg = img.clone()
         keepHand(processedImg)
         HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
-        //HighGui.waitKey()
 
-        val splitImg = processedImg.clone()
-        val totalPixels = Core.countNonZero(splitImg)
-        val masks = generatePartMasks(splitImg, 3)
-
-        for (j in 0 until 3) {
-            val partImg = Mat().apply { splitImg.copyTo(this, masks[j]) }
-            val partPixels = Core.countNonZero(partImg)
-
-            val partImgCol = Mat().apply { Imgproc.cvtColor(partImg, this, Imgproc.COLOR_GRAY2BGR) }
-            partImgCol.setTo(Scalar(255.0, 0.0, 0.0), partImg)
-
-            println("Part $j, pixels: $partPixels, total: $totalPixels")
-
-            HighGui.imshow(WINDOW_NAME_SPLIT, partImgCol)
-            HighGui.waitKey()
-        }
+        val splitImg = splitImage(processedImg)
+        HighGui.imshow(WINDOW_NAME_SPLIT, splitImg)
+        HighGui.waitKey()
     }
 
     HighGui.waitKey()
     HighGui.destroyAllWindows()
+}
+
+fun splitImage(
+    src: Mat, parts: Int = 3, partColors: List<Scalar> = listOf(
+        Scalar(0.0, 0.0, 255.0),
+        Scalar(0.0, 255.0, 0.0),
+        Scalar(255.0, 0.0, 0.0),
+        Scalar(0.0, 255.0, 255.0),
+        Scalar(255.0, 0.0, 255.0),
+        Scalar(255.0, 255.0, 0.0),
+        Scalar(255.0, 255.0, 255.0)
+    )
+): Mat {
+
+    if (partColors.size < parts) return Mat()
+
+    val splitImg = src.clone()
+    val masks = generatePartMasks(src, parts)
+    val totalPixels = Core.countNonZero(src)
+
+    Imgproc.cvtColor(splitImg, splitImg, Imgproc.COLOR_GRAY2BGR)
+
+    for (j in 0 until parts) {
+        val partImg = Mat().apply { src.copyTo(this, masks[j]) }
+        val partPixels = Core.countNonZero(partImg)
+
+        splitImg.setTo(partColors[j], partImg)
+
+        //println("Part $j, pixels: $partPixels, total: $totalPixels")
+    }
+
+    return splitImg
 }
 
 fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
