@@ -33,7 +33,7 @@ fun main(args: Array<String>) {
         //HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
 
         //HighGui.waitKey()
-        
+
         generatePartMasks(processedImg, 3)
     }
 
@@ -87,7 +87,7 @@ fun generatePartRects(src: Mat, parts: Int): List<Rect> {
 
     for (i in 0 until parts) {
         val point1 = Point(intervals[i].first.toDouble(), 0.0)
-        val point2 = Point(intervals[i].second.toDouble(), src.height().toDouble() - 1.0)
+        val point2 = Point(intervals[i].second.toDouble() + 1, src.height().toDouble()) // délkelet irányába 1 pixelnyi eltolás
         rects.add(Rect(point1, point2))
     }
 
