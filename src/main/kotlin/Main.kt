@@ -19,7 +19,10 @@ data class PartData(
 data class SplitImageData(
     val splitImage: Mat,
     val partsData: List<PartData>
-)
+) {
+    val largestPartIndex: Int
+        get() = partsData.maxByOrNull { it.partRatio }?.partNumber ?: -1
+}
 
 fun main(args: Array<String>) {
     OpenCV.loadLocally()
@@ -37,6 +40,7 @@ fun main(args: Array<String>) {
         HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
 
         val splitImgData = splitImage(processedImg)
+        highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
         HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
         println(splitImgData.partsData)
         HighGui.waitKey()
@@ -118,6 +122,13 @@ fun splitImage(
     }
 
     return SplitImageData(splitImg, partsData)
+}
+
+fun highlightPart(src: Mat, part: Int, totalParts: Int, color: Scalar = Scalar(0.0, 69.0, 255.0)) {
+    if (part < 0 || part > totalParts) return
+
+    val rects = generatePartRects(src, totalParts)
+    Imgproc.rectangle(src, rects[part], color, 2)
 }
 
 fun generatePartMasks(src: Mat, parts: Int): List<Mat> {
