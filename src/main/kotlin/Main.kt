@@ -49,7 +49,7 @@ data class SplitImageData(
         }
 }
 
-fun main(args: Array<String>) {
+fun main() {
     OpenCV.loadLocally()
 
     val screenDimension = Toolkit.getDefaultToolkit().screenSize
@@ -69,18 +69,13 @@ fun main(args: Array<String>) {
 
     cap.release()
 
-//    for (i in 1..28) {
-//        val img = Imgcodecs.imread("./HandPictures/$i.jpg", Imgcodecs.IMREAD_COLOR)
-//        processImage(img, screenDimension)
-//
-//        HighGui.waitKey()
-//    }
-
     HighGui.waitKey()
     HighGui.destroyAllWindows()
 }
 
-fun initWindows(screenDimension: Dimension) {
+fun initWindows(
+    screenDimension: Dimension
+) {
     HighGui.namedWindow(WINDOW_NAME_ORIGINAL, HighGui.WINDOW_NORMAL)
     HighGui.resizeWindow(WINDOW_NAME_ORIGINAL, screenDimension.width / 2, screenDimension.height / 2)
     HighGui.moveWindow(WINDOW_NAME_ORIGINAL, 0, 0)
@@ -98,15 +93,18 @@ fun initWindows(screenDimension: Dimension) {
     HighGui.moveWindow(WINDOW_NAME_ARROW, screenDimension.width / 2, 0)
 }
 
-fun processImage(src: Mat, screenDimension: Dimension) {
+fun processImage(
+    src: Mat,
+    screenDimension: Dimension
+) {
     resizeImage(src, screenDimension.width / 2, screenDimension.height / 2)
     Core.flip(src, src, 1)
     HighGui.imshow(WINDOW_NAME_ORIGINAL, src)
 
-    val processedImg = keepHand(src)
-    HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
+    val handImg = keepHand(src)
+    HighGui.imshow(WINDOW_NAME_PROCESSED, handImg)
 
-    val splitImgData = splitImage(processedImg)
+    val splitImgData = splitImage(handImg)
     highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
     HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
 
@@ -115,35 +113,40 @@ fun processImage(src: Mat, screenDimension: Dimension) {
     HighGui.imshow(WINDOW_NAME_ARROW, arrowImg)
 }
 
-fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
+fun resizeImage(
+    src: Mat,
+    maxWidth: Int,
+    maxHeight: Int
+) {
     val scale = (maxWidth / src.width().toDouble())
         .coerceAtMost(maxHeight / src.height().toDouble())
         .coerceAtMost(1.0)
     Imgproc.resize(src, src, Size(0.0, 0.0), scale, scale)
 }
 
-fun keepHand(src: Mat): Mat {
-    val lowerColor = doubleArrayOf(0.0, 58.0, 50.0)
-    val upperColor = doubleArrayOf(30.0, 255.0, 255.0)
-
-    val blur = Mat()
-    val hsv = Mat()
-    val mask = Mat()
+fun keepHand(
+    src: Mat,
+    lowerColor: DoubleArray = doubleArrayOf(0.0, 58.0, 50.0),
+    upperColor: DoubleArray = doubleArrayOf(30.0, 255.0, 255.0)
+): Mat {
     val dst = Mat()
 
-    Imgproc.GaussianBlur(src, blur, Size(3.0, 3.0), 0.0)
-    Imgproc.cvtColor(blur, hsv, Imgproc.COLOR_BGR2HSV)
-    Core.inRange(hsv, Scalar(lowerColor), Scalar(upperColor), mask)
+    Imgproc.GaussianBlur(src, dst, Size(3.0, 3.0), 0.0)
+    Imgproc.cvtColor(dst, dst, Imgproc.COLOR_BGR2HSV)
+    Core.inRange(dst, Scalar(lowerColor), Scalar(upperColor), dst)
 
-    Imgproc.medianBlur(mask, dst, 5)
-    val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(8.0, 8.0))
-    Imgproc.dilate(dst, dst, kernel)
+    Imgproc.medianBlur(dst, dst, 5)
+    Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, Size(8.0, 8.0)).apply {
+        Imgproc.dilate(dst, dst, this)
+    }
 
     return dst
 }
 
 fun splitImage(
-    src: Mat, parts: Int = 3, partColors: List<Scalar> = listOf(
+    src: Mat,
+    parts: Int = 3,
+    partColors: List<Scalar> = listOf(
         Scalar(0.0, 0.0, 255.0),
         Scalar(0.0, 255.0, 0.0),
         Scalar(255.0, 0.0, 0.0),
@@ -156,33 +159,41 @@ fun splitImage(
 
     if (partColors.size < parts) return SplitImageData(Mat(), emptyList())
 
-    val splitImg = src.clone()
+    val dst = Mat()
     val masks = generatePartMasks(src, parts)
 
     val partsData = mutableListOf<PartData>()
     val totalPixels = Core.countNonZero(src)
 
-    Imgproc.cvtColor(splitImg, splitImg, Imgproc.COLOR_GRAY2BGR)
+    Imgproc.cvtColor(src, dst, Imgproc.COLOR_GRAY2BGR)
 
     for (j in 0 until parts) {
         val partImg = Mat().apply { src.copyTo(this, masks[j]) }
-        splitImg.setTo(partColors[j], partImg)
+        dst.setTo(partColors[j], partImg)
 
         val partPixels = Core.countNonZero(partImg)
         partsData.add(PartData(j, partPixels / totalPixels.toDouble()))
     }
 
-    return SplitImageData(splitImg, partsData)
+    return SplitImageData(dst, partsData)
 }
 
-fun highlightPart(src: Mat, part: Int, totalParts: Int, color: Scalar = Scalar(0.0, 69.0, 255.0)) {
+fun highlightPart(
+    src: Mat,
+    part: Int,
+    totalParts: Int,
+    color: Scalar = Scalar(0.0, 69.0, 255.0)
+) {
     if (part < 0 || part > totalParts) return
 
     val rects = generatePartRects(src, totalParts)
     Imgproc.rectangle(src, rects[part], color, 2)
 }
 
-fun generatePartMasks(src: Mat, parts: Int): List<Mat> {
+fun generatePartMasks(
+    src: Mat,
+    parts: Int
+): List<Mat> {
     val masks = mutableListOf<Mat>()
     val rects = generatePartRects(src, parts)
 
@@ -195,7 +206,10 @@ fun generatePartMasks(src: Mat, parts: Int): List<Mat> {
     return masks
 }
 
-fun generatePartRects(src: Mat, parts: Int): List<Rect> {
+fun generatePartRects(
+    src: Mat,
+    parts: Int
+): List<Rect> {
     val rects = mutableListOf<Rect>()
     val intervals = splitInterval(0, src.cols() - 1, parts)
 
@@ -209,7 +223,11 @@ fun generatePartRects(src: Mat, parts: Int): List<Rect> {
     return rects
 }
 
-fun splitInterval(start: Int, end: Int, parts: Int): List<Pair<Int, Int>> {
+fun splitInterval(
+    start: Int,
+    end: Int,
+    parts: Int
+): List<Pair<Int, Int>> {
     val size = floor((end - start + 1) / parts.toDouble())
     var mod = (end - start + 1) % parts.toDouble()
 
@@ -254,11 +272,4 @@ fun createDirectionImage(
     else Imgproc.arrowedLine(img, start, end, paintColor, 10)
 
     return img
-}
-
-fun Rect.toMatOfPoints(): MatOfPoint {
-    val tr = Point((x + width).toDouble(), y.toDouble())
-    val bl = Point(x.toDouble(), (y + height).toDouble())
-
-    return MatOfPoint(tl(), tr, br(), bl)
 }
