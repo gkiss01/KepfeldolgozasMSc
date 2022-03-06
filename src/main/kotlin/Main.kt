@@ -13,6 +13,8 @@ const val WINDOW_NAME_SPLIT = "Hand detection (split)"
 const val WINDOW_NAME_ARROW = "Hand detection (arrow)"
 
 enum class Directions {
+    STAY,
+
     NORTH,
     EAST,
     SOUTH,
@@ -30,6 +32,15 @@ data class SplitImageData(
 ) {
     val largestPartIndex: Int
         get() = partsData.maxByOrNull { it.partRatio }?.partNumber ?: -1
+
+    val toDirection: Directions
+        get() = when {
+            partsData.size != 3 -> Directions.STAY
+            largestPartIndex == 0 -> Directions.WEST
+            largestPartIndex == 1 -> Directions.NORTH
+            largestPartIndex == 2 -> Directions.EAST
+            else -> Directions.STAY
+        }
 }
 
 fun main(args: Array<String>) {
@@ -51,7 +62,7 @@ fun main(args: Array<String>) {
         highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
         HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
 
-        val arrowImg = createArrowImage(Directions.SOUTH)
+        val arrowImg = createDirectionImage(splitImgData.toDirection)
         resizeImage(arrowImg, dimension.width / 2, dimension.height / 2)
         HighGui.imshow(WINDOW_NAME_ARROW, arrowImg)
 
@@ -192,9 +203,9 @@ fun splitInterval(start: Int, end: Int, parts: Int): List<Pair<Int, Int>> {
     return intervals
 }
 
-fun createArrowImage(
+fun createDirectionImage(
     direction: Directions,
-    arrowColor: Scalar = Scalar(64.0, 64.0, 64.0),
+    paintColor: Scalar = Scalar(64.0, 64.0, 64.0),
     backgroundColor: Scalar = Scalar(255.0, 255.0, 255.0)
 ): Mat {
     val img = Mat(Size(600.0, 400.0), CvType.CV_8UC3, backgroundColor)
@@ -204,6 +215,7 @@ fun createArrowImage(
         Directions.NORTH -> Point(300.0, 300.0)
         Directions.SOUTH -> Point(300.0, 100.0)
         Directions.WEST -> Point(500.0, 200.0)
+        Directions.STAY -> Point(300.0, 200.0)
     }
 
     val end = when (direction) {
@@ -211,9 +223,11 @@ fun createArrowImage(
         Directions.NORTH -> Point(300.0, 100.0)
         Directions.SOUTH -> Point(300.0, 300.0)
         Directions.WEST -> Point(100.0, 200.0)
+        Directions.STAY -> Point(300.0, 200.0)
     }
 
-    Imgproc.arrowedLine(img, start, end, arrowColor, 10)
+    if (direction == Directions.STAY) Imgproc.circle(img, start, 100, paintColor, 10)
+    else Imgproc.arrowedLine(img, start, end, paintColor, 10)
 
     return img
 }
