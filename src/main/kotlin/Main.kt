@@ -32,7 +32,12 @@ data class SplitImageData(
     val partsData: List<PartData>
 ) {
     val largestPartIndex: Int
-        get() = partsData.maxByOrNull { it.partRatio }?.partNumber ?: -1
+        get() {
+            val maxPart = partsData.maxByOrNull { it.partRatio } ?: return -1
+            val equalParts = partsData.filter { it.partRatio == maxPart.partRatio }.size
+            return if (equalParts != 1) -1
+            else maxPart.partNumber
+        }
 
     val toDirection: Directions
         get() = when {
