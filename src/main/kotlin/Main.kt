@@ -7,6 +7,7 @@ import org.opencv.videoio.Videoio
 import java.awt.Dimension
 import java.awt.Toolkit
 import kotlin.math.floor
+import kotlin.system.exitProcess
 
 const val WINDOW_NAME_ORIGINAL = "Hand detection"
 const val WINDOW_NAME_PROCESSED = "Hand detection (processed)"
@@ -71,6 +72,8 @@ fun main() {
 
     HighGui.waitKey()
     HighGui.destroyAllWindows()
+
+    exitProcess(0)
 }
 
 fun initWindows(
