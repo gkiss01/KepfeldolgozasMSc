@@ -1,8 +1,9 @@
 import nu.pattern.OpenCV
 import org.opencv.core.*
 import org.opencv.highgui.HighGui
-import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
+import org.opencv.videoio.VideoCapture
+import org.opencv.videoio.Videoio
 import java.awt.Dimension
 import java.awt.Toolkit
 import kotlin.math.floor
@@ -46,28 +47,29 @@ data class SplitImageData(
 fun main(args: Array<String>) {
     OpenCV.loadLocally()
 
-    val dimension = Toolkit.getDefaultToolkit().screenSize
-    initWindows(dimension)
+    val screenDimension = Toolkit.getDefaultToolkit().screenSize
+    initWindows(screenDimension)
 
-    for (i in 1..28) {
-        val img = Imgcodecs.imread("./HandPictures/$i.jpg", Imgcodecs.IMREAD_COLOR)
+    val cap = VideoCapture(0, Videoio.CAP_DSHOW)
+    val img = Mat()
+    if (cap.isOpened) {
+        while (true) {
+            if (!cap.read(img)) continue
+            processImage(img, screenDimension)
 
-        resizeImage(img, dimension.width / 2, dimension.height / 2)
-        HighGui.imshow(WINDOW_NAME_ORIGINAL, img)
-
-        val processedImg = keepHand(img)
-        HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
-
-        val splitImgData = splitImage(processedImg)
-        highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
-        HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
-
-        val arrowImg = createDirectionImage(splitImgData.toDirection)
-        resizeImage(arrowImg, dimension.width / 2, dimension.height / 2)
-        HighGui.imshow(WINDOW_NAME_ARROW, arrowImg)
-
-        HighGui.waitKey()
+            val keyPressed = HighGui.waitKey(16)
+            if (keyPressed == 27) break
+        }
     }
+
+    cap.release()
+
+//    for (i in 1..28) {
+//        val img = Imgcodecs.imread("./HandPictures/$i.jpg", Imgcodecs.IMREAD_COLOR)
+//        processImage(img, screenDimension)
+//
+//        HighGui.waitKey()
+//    }
 
     HighGui.waitKey()
     HighGui.destroyAllWindows()
@@ -89,6 +91,23 @@ fun initWindows(screenDimension: Dimension) {
     HighGui.namedWindow(WINDOW_NAME_ARROW, HighGui.WINDOW_NORMAL)
     HighGui.resizeWindow(WINDOW_NAME_ARROW, screenDimension.width / 2, screenDimension.height / 2)
     HighGui.moveWindow(WINDOW_NAME_ARROW, screenDimension.width / 2, 0)
+}
+
+fun processImage(src: Mat, screenDimension: Dimension) {
+    resizeImage(src, screenDimension.width / 2, screenDimension.height / 2)
+    Core.flip(src, src, 1)
+    HighGui.imshow(WINDOW_NAME_ORIGINAL, src)
+
+    val processedImg = keepHand(src)
+    HighGui.imshow(WINDOW_NAME_PROCESSED, processedImg)
+
+    val splitImgData = splitImage(processedImg)
+    highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
+    HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
+
+    val arrowImg = createDirectionImage(splitImgData.toDirection)
+    resizeImage(arrowImg, screenDimension.width / 2, screenDimension.height / 2)
+    HighGui.imshow(WINDOW_NAME_ARROW, arrowImg)
 }
 
 fun resizeImage(src: Mat, maxWidth: Int, maxHeight: Int) {
