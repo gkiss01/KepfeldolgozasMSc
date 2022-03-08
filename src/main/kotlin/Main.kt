@@ -129,8 +129,8 @@ fun resizeImage(
 
 fun keepHand(
     src: Mat,
-    lowerColor: DoubleArray = doubleArrayOf(0.0, 58.0, 50.0),
-    upperColor: DoubleArray = doubleArrayOf(30.0, 255.0, 255.0)
+    lowerColor: DoubleArray = doubleArrayOf(90.0, 105.0, 0.0),
+    upperColor: DoubleArray = doubleArrayOf(110.0, 230.0, 255.0)
 ): Mat {
     val dst = Mat()
 
