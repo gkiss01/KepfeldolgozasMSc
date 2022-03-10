@@ -102,7 +102,7 @@ fun processImage(
     val handImg = keepHand(src)
     HighGui.imshow(WINDOW_NAME_PROCESSED, handImg)
 
-    val splitImgData = splitImage(handImg, parts = 7)
+    val splitImgData = splitImage(handImg, parts = 8)
     highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
     HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
 
@@ -141,18 +141,22 @@ fun keepHand(
     return dst
 }
 
+fun generateColorsHsv(
+    count: Int
+): List<Scalar> {
+    val colors = mutableListOf<Scalar>()
+    val intervals = splitInterval(0, 180, count)
+    for (interval in intervals) {
+        colors.add(Scalar(interval.first.toDouble(), 255.0, 255.0))
+    }
+    println(colors)
+    return colors
+}
+
 fun splitImage(
     src: Mat,
     parts: Int = 3,
-    partColors: List<Scalar> = listOf(
-        Scalar(0.0, 0.0, 255.0),
-        Scalar(0.0, 255.0, 0.0),
-        Scalar(255.0, 0.0, 0.0),
-        Scalar(0.0, 255.0, 255.0),
-        Scalar(255.0, 0.0, 255.0),
-        Scalar(255.0, 255.0, 0.0),
-        Scalar(255.0, 255.0, 255.0)
-    )
+    partColors: List<Scalar> = generateColorsHsv(parts)
 ): SplitImageData {
 
     if (partColors.size < parts) return SplitImageData(Mat(), emptyList())
@@ -164,6 +168,7 @@ fun splitImage(
     val totalPixels = Core.countNonZero(src)
 
     Imgproc.cvtColor(src, dst, Imgproc.COLOR_GRAY2BGR)
+    Imgproc.cvtColor(dst, dst, Imgproc.COLOR_BGR2HSV)
 
     for (j in 0 until parts) {
         val partImg = Mat().apply { src.copyTo(this, masks[j]) }
@@ -172,6 +177,8 @@ fun splitImage(
         val partPixels = Core.countNonZero(partImg)
         partsData.add(PartData(j, partPixels / totalPixels.toDouble()))
     }
+
+    Imgproc.cvtColor(dst, dst, Imgproc.COLOR_HSV2BGR)
 
     return SplitImageData(dst, partsData)
 }
