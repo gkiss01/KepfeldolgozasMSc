@@ -15,15 +15,6 @@ const val WINDOW_NAME_PROCESSED = "Hand detection (processed)"
 const val WINDOW_NAME_SPLIT = "Hand detection (split)"
 const val WINDOW_NAME_ARROW = "Hand detection (arrow)"
 
-enum class Directions {
-    STAY,
-
-    NORTH,
-    EAST,
-    SOUTH,
-    WEST
-}
-
 data class PartData(
     val partNumber: Int,
     val partRatio: Double
@@ -39,15 +30,6 @@ data class SplitImageData(
             val equalParts = partsData.filter { it.partRatio == maxPart.partRatio }.size
             return if (equalParts != 1) -1
             else maxPart.partNumber
-        }
-
-    val toDirection: Directions
-        get() = when {
-            partsData.size != 3 -> Directions.STAY
-            largestPartIndex == 0 -> Directions.WEST
-            largestPartIndex == 1 -> Directions.NORTH
-            largestPartIndex == 2 -> Directions.EAST
-            else -> Directions.STAY
         }
 
     val asAngle: Double
@@ -124,7 +106,7 @@ fun processImage(
     highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
     HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
 
-    val arrowImg = createDirectionImage(splitImgData.toDirection)
+    val arrowImg = createArrowImage(splitImgData.asAngle)
     resizeImage(arrowImg, screenDimension.width / 2, screenDimension.height / 2)
     HighGui.imshow(WINDOW_NAME_ARROW, arrowImg)
 }
@@ -261,31 +243,17 @@ fun splitInterval(
     return intervals
 }
 
-fun createDirectionImage(
-    direction: Directions,
+fun createArrowImage(
+    angle: Double,
     paintColor: Scalar = Scalar(64.0, 64.0, 64.0),
     backgroundColor: Scalar = Scalar(255.0, 255.0, 255.0)
 ): Mat {
-    val img = Mat(Size(600.0, 400.0), CvType.CV_8UC3, backgroundColor)
+    val img = Mat(Size(600.0, 600.0), CvType.CV_8UC3, backgroundColor)
+    val start = Point(300.0, 300.0)
+    val end = Point(500.0, 300.0)
 
-    val start = when (direction) {
-        Directions.EAST -> Point(100.0, 200.0)
-        Directions.NORTH -> Point(300.0, 300.0)
-        Directions.SOUTH -> Point(300.0, 100.0)
-        Directions.WEST -> Point(500.0, 200.0)
-        Directions.STAY -> Point(300.0, 200.0)
-    }
-
-    val end = when (direction) {
-        Directions.EAST -> Point(500.0, 200.0)
-        Directions.NORTH -> Point(300.0, 100.0)
-        Directions.SOUTH -> Point(300.0, 300.0)
-        Directions.WEST -> Point(100.0, 200.0)
-        Directions.STAY -> Point(300.0, 200.0)
-    }
-
-    if (direction == Directions.STAY) Imgproc.circle(img, start, 100, paintColor, 10)
-    else Imgproc.arrowedLine(img, start, end, paintColor, 10)
+    if (angle == 0.0 || angle.isNaN()) Imgproc.circle(img, start, 200, paintColor, 10)
+    else Imgproc.arrowedLine(img, start, end.rotate(start, Math.toRadians(-angle)), paintColor, 10)
 
     return img
 }
