@@ -102,7 +102,7 @@ fun processImage(
     val handImg = keepHand(src)
     HighGui.imshow(WINDOW_NAME_PROCESSED, handImg)
 
-    val splitImgData = splitImage(handImg, parts = 5)
+    val splitImgData = splitImage(handImg, parts = 7)
     highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
     HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
 
@@ -252,7 +252,7 @@ fun createArrowImage(
     val start = Point(300.0, 300.0)
     val end = Point(500.0, 300.0)
 
-    if (angle == 0.0 || angle.isNaN()) Imgproc.circle(img, start, 200, paintColor, 10)
+    if (angle.isNaN()) Imgproc.circle(img, start, 200, paintColor, 10)
     else Imgproc.arrowedLine(img, start, end.rotate(start, Math.toRadians(-angle)), paintColor, 10)
 
     return img
