@@ -6,6 +6,7 @@ import org.opencv.videoio.VideoCapture
 import org.opencv.videoio.Videoio
 import java.awt.Dimension
 import java.awt.Toolkit
+import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.system.exitProcess
 
@@ -47,6 +48,18 @@ data class SplitImageData(
             largestPartIndex == 1 -> Directions.NORTH
             largestPartIndex == 2 -> Directions.EAST
             else -> Directions.STAY
+        }
+
+    val asAngle: Double
+        get() {
+            val largestPartNumber = partsData.size - 1
+            val partAngle = 180.0 / largestPartNumber
+            var sumAngle = 0.0
+
+            for (partData in partsData) {
+                sumAngle += abs(partData.partNumber - largestPartNumber) * partData.partRatio * partAngle
+            }
+            return sumAngle
         }
 }
 
@@ -107,7 +120,7 @@ fun processImage(
     val handImg = keepHand(src)
     HighGui.imshow(WINDOW_NAME_PROCESSED, handImg)
 
-    val splitImgData = splitImage(handImg)
+    val splitImgData = splitImage(handImg, parts = 5)
     highlightPart(splitImgData.splitImage, splitImgData.largestPartIndex, splitImgData.partsData.size)
     HighGui.imshow(WINDOW_NAME_SPLIT, splitImgData.splitImage)
 
