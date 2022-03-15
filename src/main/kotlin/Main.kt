@@ -94,7 +94,7 @@ fun initWindows(
 fun processImage(
     src: Mat,
     screenDimension: Dimension
-) {
+): Double {
     resizeImage(src, screenDimension.width / 2, screenDimension.height / 2)
     Core.flip(src, src, 1)
     HighGui.imshow(WINDOW_NAME_ORIGINAL, src)
@@ -109,6 +109,8 @@ fun processImage(
     val arrowImg = createArrowImage(splitImgData.asAngle)
     resizeImage(arrowImg, screenDimension.width / 2, screenDimension.height / 2)
     HighGui.imshow(WINDOW_NAME_ARROW, arrowImg)
+
+    return splitImgData.asAngle
 }
 
 fun resizeImage(
@@ -149,7 +151,6 @@ fun generateColorsHsv(
     for (interval in intervals) {
         colors.add(Scalar(interval.first.toDouble(), 255.0, 255.0))
     }
-    println(colors)
     return colors
 }
 
