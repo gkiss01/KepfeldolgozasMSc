@@ -1,3 +1,4 @@
+import blur.gaussianBlurColored
 import nu.pattern.OpenCV
 import org.opencv.core.*
 import org.opencv.highgui.HighGui
@@ -74,10 +75,8 @@ fun keepHand( // a kezet tartalmazó maszk létrehozása
     lowerColor: DoubleArray = doubleArrayOf(90.0, 105.0, 0.0),
     upperColor: DoubleArray = doubleArrayOf(110.0, 230.0, 255.0)
 ): Mat {
-    val dst = Mat()
-
-    // bemeneti kép enyhe elmosása
-    Imgproc.GaussianBlur(src, dst, Size(3.0, 3.0), 0.0)
+    // bemeneti kép enyhe elmosása SAJÁT függvénnyel
+    val dst = gaussianBlurColored(src, 3)
 
     // átváltunk HSV színtérre, majd egy maszkot készítünk a tartományba eső pontokról
     Imgproc.cvtColor(dst, dst, Imgproc.COLOR_BGR2HSV)
