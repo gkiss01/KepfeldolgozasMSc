@@ -140,7 +140,7 @@ fun highlightImagePart( // adott indexű partíció kiemelése a képen
     totalParts: Int,
     color: Scalar = Scalar(0.0, 69.0, 255.0)
 ) {
-    if (part < 0 || part > totalParts) throw Exception("The part number cannot be greater than totalParts.")
+    if (part < 0 || part > totalParts) return // throw Exception("The part number cannot be greater than totalParts.")
 
     // létrehozzuk a darabolásához használt téglalapokat a megfelelő számban
     val rects = generateImagePartRects(src, totalParts)
